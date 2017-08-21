@@ -1,0 +1,788 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html" xmlns="http://www.w3.org/1999/html">
+<link rel="import" href="../../bower_components/px-sample-cards/blank-card.html">
+<link rel="import" href="../../bower_components/px-view-header/px-view-header.html">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css?family=Cabin" rel="stylesheet">
+<dom-module id="parking-space">
+  <template>
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 10px;
+        font-family: 'Oswald', sans-serif;
+        background-color: #272727;
+      }
+      #description {
+        font-family: 'Oswald', sans-serif;
+        font-size: 15px;
+        font-weight: 300;
+      }
+      #infowindow-content .title {
+        font-weight: bold;
+      }
+      #infowindow-content {
+        display: none;
+      }
+      #map #infowindow-content {
+        display: inline;
+        margin: auto;
+      }
+      .pac-card {
+        margin: 10px 10px 0 0;
+        border-radius: 2px 0 0 2px;
+        box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        outline: none;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        background-color: #fff;
+        font-family: 'Oswald', sans-serif;
+        display:block;
+      }
+      #pac-container {
+        padding-bottom: 2em;
+        vertical-align: middle;
+        white-space: nowrap;
+        position: relative;
+        display:block;
+      }
+      .pac-controls {
+        display: inline-block;
+        padding: 5px 11px;
+      }
+      .pac-controls label {
+        font-family: 'Oswald', sans-serif;
+        font-size: 13px;
+        font-weight: 300;
+      }
+      #pac-input{
+        width: 800px;
+        box-sizing: border-box;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+        text-overflow: ellipsis;
+        background-color: white;
+        padding-left: 45px;
+        background-position: 10px 10px;
+        background-repeat: no-repeat;
+        padding: 12px 20px 12px 40px;
+        -webkit-transition: width 0.4s ease-in-out;
+        transition: width 0.4s ease-in-out;
+        -webkit-box-shadow: 3px 3px 4px 0 rgba(0,0,0,0.4) , 2px 2px 2px 0 rgba(0,0,0,0.2) inset;
+        box-shadow: 3px 3px 4px 0 rgba(0,0,0,0.4) , 2px 2px 2px 0 rgba(0,0,0,0.2) inset;
+        text-shadow: 1px 1px 0 rgba(255,255,255,0.66);
+        display: block;
+        margin: auto;
+      }
+
+      #pac-input:focus {
+        width: 75	%;
+        border-color: #4d90fe;
+        /*?display: block;*/
+        /*margin: auto;*/
+      }
+      #pac-icon {
+        background: url('http://icons.iconarchive.com/icons/rafiqul-hassan/blogger/128/Search-icon.png');
+        float: left;
+      }
+      .vertical-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .horizontal-flex {
+        display: flex;
+        padding: 12px;
+        flex-direction: row;
+        justify-content: space-between;
+      }
+      .details {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        flex-direction: column;
+        width: 50%;
+        height: 500px;
+        display: none;
+        padding: 20px;
+      }
+      #floating-panel {
+        position: absolute;
+        top: 10px;
+        left: 25%;
+        z-index: 5;
+        background-color: #fff;
+        padding: 5px;
+        border: 1px solid #999;
+        text-align: center;
+        font-family: 'Oswald', sans-serif;
+        line-height: 30px;
+        padding-left: 10px;
+      }
+      #floating-panel {
+        background-color: #fff;
+        border: 1px solid #999;
+        left: 25%;
+        padding: 5px;
+        position: absolute;
+        top: 10px;
+        z-index: 5;
+      }
+      #predix-content {
+        padding: 10px;
+      }
+      :before,
+      :after {
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+      }
+
+      .wrapper {
+        text-align: center;
+      }
+      /*#title {
+              color: #fff;
+              background-color: #3399FF;
+              font-size: 25px;
+              font-weight: 500;
+              padding: 6px 12px;
+          }*/
+      .title {
+        font-size: 2em;
+        position: relative;
+        margin: 0 auto 1em;
+        padding: 1em 1em .25em 1em;
+        text-align: center;
+        text-transform: uppercase;
+
+      }
+      .title:after {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        width: 240px;
+        height: 4px;
+        margin-left: -120px;
+        content: '';
+        background-color: #fff;
+      }
+
+      .panel-title{
+        font-size: 1.25em;
+        font-weight: bold;
+      }
+      
+      .main-heading {
+        color: #ffcc33;
+        background-color: #330033;
+        text-align: center;
+        height: 80px;
+        font-size: 40px;
+        font-weight: bold;
+      }
+
+      h1 {
+        text-align: center;
+        padding: 20px;
+        background-color: #086e87;
+        color: white;
+        display: none;
+      }
+      .map {
+        width: 50%;
+      }
+      section {
+        display: block;
+        width: 50%;
+        padding: 10px;
+      }
+    </style>
+    <div>
+      <div class="main-heading"><img src="http://carp.sfsu.edu/profiles/sfstatedrupal7/themes/sfstate_template/logo.png">   San Francisco State University</div>
+      <div id="type-selector" class="pac-controls">
+        <input type="hidden" name="type" id="changetype-all" checked="checked">
+      </div>
+    </div>
+    <div id="pac-container">
+      <div id="pac-icon"></div>
+      <input id="pac-input" type="text" placeholder="Enter a location">
+    </div>
+    </div>
+    <header>
+      <h1>Parking Details</h1>
+    </header>
+    <div class="horizontal-flex">
+      <div id="parking" style="width: 50%; height: 500px;"></div>
+      <section class="details">
+        <div style="background: white; padding: 50px;">
+          <div style="font-size: 30px"><b>Available Parking Spaces:</b> <b><span style="font-size: 30px" class="aps"></span></b>
+          </div>
+          <div style="font-size: 30px"><b>Availability Percentage:</b> <b><span style="font-size: 30px" class="ap"></span></b>
+          </div>
+        </div>
+      </section>
+    </div>
+    <!-- </div> -->
+    <header >
+      <h1 >Traffic Details</h1>
+    </header>
+    <div class="horizontal-flex">
+      <div id="traffic" style="width: 50%; height: 500px;"></div>
+      <section class="details">
+        <div style="background: white; padding: 50px;">
+          <div style="font-size: 30px" class="ttu"><b>Moving Towards the University: </b>
+            <br>
+            <span class="vc"></span> - <span class="ts"></span>
+          </div>
+          <div style="font-size: 30px" class="tau"><b>Moving Away From the University: </b>
+            <br>
+            <span class="vc"></span> - <span class="ts"></span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <header>
+      <h1 >Pedestrian Details</h1>
+    </header>
+    <div class="horizontal-flex">
+      <div id="pedestrian" style="width: 50%; height: 500px;"></div>
+      <section class="details">
+        <div style="background: white; padding: 50px;">
+          <div style="font-size: 30px" class="tpc"><b>Total pedestrians on campus: </b>
+            <br>
+            <span class="pc"></span> - <span class="ps"></span>
+          </div>
+          <div style="font-size: 30px" class="ptu"><b>Pedestrians going towards campus: </b>
+            <br>
+            <span class="pc"></span> - <span class="ps"></span>
+          </div>
+          <div style="font-size: 30px" class="pau"><b>Pedestrians going away from campus: </b>
+            <br>
+            <span class="pc"></span> - <span class="ps"></span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <header>
+      <h1>Predictions</h1>
+    </header>
+    <div class="horizontal-flex">
+      <section class="details">
+        <div style="background: white; padding: 50px;">
+          <div style="font-size: 30px" class="wtu"><b>Best way to go to university :</b>
+            <br>
+            <span class="p"></span></div>
+          <div style="font-size: 30px" class="fs"><b>Fuel Saved :</b>
+            <br>
+            <span class="count"></span></div>
+          <div style="font-size: 30px" class="ts"><b>Time Saved :</b>
+            <br>
+            <span class="time"></span></div>
+          <div style="font-size: 30px" class="sm"><b>Safety Meter :</b>
+            <br>
+            <span class="value"></span></div>
+        </div>
+      </section>
+      <section class="details">
+        <div style="background: white; padding: 50px;">
+          <div style="font-size: 30px"><b>Weather Summary: </b><span class="summary"></span>
+          </div>
+          <div style="font-size: 30px"><b>Max Temperature: </b><span class="temperatureMax"></span>
+          </div>
+          <div style="font-size: 30px"><b>Min Temperature: </b><span class="temperatureMin"></span>
+          </div>
+          <div style="font-size: 30px"><b>Wind Speed: </b><span class="windSpeed"></span>
+          </div>
+          <div style="font-size: 30px"><b>Humidity: </b><span class="humidity"></span>
+          </div>
+
+        </div>
+      </section>
+    </div>
+    </div>
+    <div id="infowindow-content">
+      <img src="" width="16" height="16" id="place-icon">
+      <span id="place-name" class="title"></span>
+      <br>
+      <span id="place-address"></span>
+    </div>
+    <script>
+      // This example requires the Places library. Include the libraries=places
+      // parameter when you first load the API. For example:
+      // <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
+      const http = new XMLHttpRequest();
+      var availableParking = 0;
+      var totalParkingSpaces = 20;
+      var map, heatmap;
+      function initMap() {
+        var card = document.getElementById('pac-card');
+        var input = document.getElementById('pac-input');
+        var autocomplete = new google.maps.places.Autocomplete(input);
+        autocomplete.addListener('place_changed', function() {
+          var place = autocomplete.getPlace();
+          if (!place.geometry) {
+            // User entered the name of a Place that was not suggested and
+            // pressed the Enter key, or the Place Details request failed.
+            window.alert("No details available for input: '" + place.name + "'");
+            return;
+          }
+          var lat = place.geometry.location.lat();
+          var lng = place.geometry.location.lng();
+          var promises = [];
+          showAvailableSpaces(lat, lng);
+          showTrafficFlow(lat, lng);
+          showPedestrianData(lat, lng);
+        });
+      }
+
+      // pedestrian code starts
+      function showPedestrianData(lat, lng) {
+        return new Promise((resolve, reject) => {
+          var sfsu_LatLng = {lat: lat, lng: lng};
+          map = new google.maps.Map(document.getElementById('pedestrian'), {
+            zoom: 16,
+            center: sfsu_LatLng,
+            //mapTypeId: 'satellite'
+            styles: [{"featureType":"water","elementType":"geometry","stylers":[{"color":"#e9e9e9"},{"lightness":17}]},{"featureType":"landscape","elementType":"geometry","stylers":[{"color":"#f5f5f5"},{"lightness":20}]},{"featureType":"road.highway","elementType":"geometry.fill","stylers":[{"color":"#ffffff"},{"lightness":17}]},{"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#ffffff"},{"lightness":29},{"weight":0.2}]},{"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#ffffff"},{"lightness":18}]},{"featureType":"road.local","elementType":"geometry","stylers":[{"color":"#ffffff"},{"lightness":16}]},{"featureType":"poi","elementType":"geometry","stylers":[{"color":"#f5f5f5"},{"lightness":21}]},{"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#dedede"},{"lightness":21}]},{"elementType":"labels.text.stroke","stylers":[{"visibility":"on"},{"color":"#ffffff"},{"lightness":16}]},{"elementType":"labels.text.fill","stylers":[{"saturation":36},{"color":"#333333"},{"lightness":40}]},{"elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"transit","elementType":"geometry","stylers":[{"color":"#f2f2f2"},{"lightness":19}]},{"featureType":"administrative","elementType":"geometry.fill","stylers":[{"color":"#fefefe"},{"lightness":20}]},{"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#fefefe"},{"lightness":17},{"weight":1.2}]}]
+          });
+          var marker_locations = set_Markers(lat, lng, map);
+
+          var pedestrianData = getPedestrianGeo(lat, lng);
+          var pedestrianTowardsUniversityPedestrianCount = 0;
+          var pedestrianTowardsUniversityPedestrianSummery;
+          var pedestrianAwayFromUniversityPedestrianCount = 0;
+          var pedestrianAwayFromUniversityPedestrianSummery;
+          var totalPedestrian = 0;
+          var totalPedestrianSummary;
+          pedestrianData.forEach((pedestrian)=> {
+            pedestrianAwayFromUniversityPedestrianCount += pedestrian.out_count;
+            pedestrianTowardsUniversityPedestrianCount += pedestrian.in_count;
+          })
+          totalPedestrian = pedestrianAwayFromUniversityPedestrianCount + pedestrianTowardsUniversityPedestrianCount;
+          switch (true) {
+            case pedestrianAwayFromUniversityPedestrianCount < 30: pedestrianAwayFromUniversityPedestrianSummery = 'Low Crowd';
+              break;
+            case pedestrianAwayFromUniversityPedestrianCount > 30 && pedestrianAwayFromUniversityPedestrianCount < 60: pedestrianAwayFromUniversityPedestrianSummery = 'Medium Crowd';
+              break;
+            case pedestrianAwayFromUniversityPedestrianCount > 80: pedestrianAwayFromUniversityPedestrianSummery = 'Heavy Crowd';
+              break;
+            default: pedestrianAwayFromUniversityPedestrianSummery = 'Low Traffic';
+          }
+          switch (true) {
+            case pedestrianTowardsUniversityPedestrianCount < 30: pedestrianTowardsUniversityPedestrianSummery = 'Low Crowd';
+              break;
+            case pedestrianTowardsUniversityPedestrianCount > 30 && pedestrianTowardsUniversityPedestrianCount < 60: pedestrianAwayFromUniversityPedestrianSummery = 'Medium Crowd';
+              break;
+            case pedestrianTowardsUniversityPedestrianCount > 80: pedestrianTowardsUniversityPedestrianSummery = 'Heavy Crowd';
+              break;
+            default: pedestrianTowardsUniversityPedestrianSummery = 'Heavy Crowd';
+          }
+          switch (true) {
+            case totalPedestrian < 60: totalPedestrianSummary = 'Low Crowd';
+              break;
+            case totalPedestrian > 60 && totalPedestrianSummary < 160: totalPedestrianSummary = 'Medium Crowd';
+              break;
+            case totalPedestrian > 160: totalPedestrianSummary = 'Heavy Crowd';
+              break;
+            default: totalPedestrianSummary = 'Heavy Crowd';
+          }
+          $('.tpc > .pc').html(totalPedestrian);
+          $('.tpc > .ps').html(totalPedestrianSummary);
+          $('.ptu > .pc').html(pedestrianTowardsUniversityPedestrianCount);
+          $('.ptu > .ps').html(pedestrianTowardsUniversityPedestrianSummery);
+          $('.pau > .pc').html(pedestrianAwayFromUniversityPedestrianCount);
+          $('.pau > .ps').html(pedestrianAwayFromUniversityPedestrianSummery);
+          resolve();
+        })
+      }
+      function toggleHeatmap() {
+        heatmap.setMap(heatmap.getMap() ? null : map);
+      }
+      function changeGradient() {
+        var gradient = [
+          'rgba(0, 255, 255, 0)',
+          'rgba(0, 255, 255, 1)',
+          'rgba(0, 191, 255, 1)',
+          'rgba(0, 127, 255, 1)',
+          'rgba(0, 63, 255, 1)',
+          'rgba(0, 0, 255, 1)',
+          'rgba(0, 0, 223, 1)',
+          'rgba(0, 0, 191, 1)',
+          'rgba(0, 0, 159, 1)',
+          'rgba(0, 0, 127, 1)',
+          'rgba(63, 0, 91, 1)',
+          'rgba(127, 0, 63, 1)',
+          'rgba(191, 0, 31, 1)',
+          'rgba(255, 0, 0, 1)'
+        ]
+        heatmap.set('gradient', heatmap.get('gradient') ? null : gradient);
+      }
+      function changeRadius() {
+        heatmap.set('radius', heatmap.get('radius') ? null : 20);
+      }
+
+      function changeOpacity() {
+        heatmap.set('opacity', heatmap.get('opacity') ? null : 0.2);
+      }
+
+      var array = [];
+
+      function points(ped_locations) {
+
+        switch (ped_locations.length){
+
+          case 5:
+            return[
+              new google.maps.LatLng(ped_locations[0].lat,ped_locations[0].lng),
+              new google.maps.LatLng(ped_locations[1].lat,ped_locations[1].lng),
+              new google.maps.LatLng(ped_locations[2].lat,ped_locations[2].lng),
+              new google.maps.LatLng(ped_locations[3].lat,ped_locations[3].lng),
+              new google.maps.LatLng(ped_locations[4].lat,ped_locations[4].lng)
+            ];
+          case 6:
+            return[
+              new google.maps.LatLng(ped_locations[0].lat,ped_locations[0].lng),
+              new google.maps.LatLng(ped_locations[1].lat,ped_locations[1].lng),
+              new google.maps.LatLng(ped_locations[2].lat,ped_locations[2].lng),
+              new google.maps.LatLng(ped_locations[3].lat,ped_locations[3].lng),
+              new google.maps.LatLng(ped_locations[4].lat,ped_locations[4].lng),
+              new google.maps.LatLng(ped_locations[5].lat,ped_locations[5].lng)
+            ];
+          case 7:
+            return[
+              new google.maps.LatLng(ped_locations[0].lat,ped_locations[0].lng),
+              new google.maps.LatLng(ped_locations[1].lat,ped_locations[1].lng),
+              new google.maps.LatLng(ped_locations[2].lat,ped_locations[2].lng),
+              new google.maps.LatLng(ped_locations[3].lat,ped_locations[3].lng),
+              new google.maps.LatLng(ped_locations[4].lat,ped_locations[4].lng),
+              new google.maps.LatLng(ped_locations[5].lat,ped_locations[5].lng),
+              new google.maps.LatLng(ped_locations[6].lat,ped_locations[6].lng)
+            ];
+          case 8:
+            return[
+              new google.maps.LatLng(ped_locations[0].lat,ped_locations[0].lng),
+              new google.maps.LatLng(ped_locations[1].lat,ped_locations[1].lng),
+              new google.maps.LatLng(ped_locations[2].lat,ped_locations[2].lng),
+              new google.maps.LatLng(ped_locations[3].lat,ped_locations[3].lng),
+              new google.maps.LatLng(ped_locations[4].lat,ped_locations[4].lng),
+              new google.maps.LatLng(ped_locations[5].lat,ped_locations[5].lng),
+              new google.maps.LatLng(ped_locations[6].lat,ped_locations[6].lng),
+              new google.maps.LatLng(ped_locations[7].lat,ped_locations[7].lng)
+            ];
+          case 9:
+            return[
+              new google.maps.LatLng(ped_locations[0].lat,ped_locations[0].lng),
+              new google.maps.LatLng(ped_locations[1].lat,ped_locations[1].lng),
+              new google.maps.LatLng(ped_locations[2].lat,ped_locations[2].lng),
+              new google.maps.LatLng(ped_locations[3].lat,ped_locations[3].lng),
+              new google.maps.LatLng(ped_locations[4].lat,ped_locations[4].lng),
+              new google.maps.LatLng(ped_locations[5].lat,ped_locations[5].lng),
+              new google.maps.LatLng(ped_locations[6].lat,ped_locations[6].lng),
+              new google.maps.LatLng(ped_locations[7].lat,ped_locations[7].lng),
+              new google.maps.LatLng(ped_locations[8].lat,ped_locations[8].lng)
+            ];
+          case 10:
+            return[
+              new google.maps.LatLng(ped_locations[0].lat,ped_locations[0].lng),
+              new google.maps.LatLng(ped_locations[1].lat,ped_locations[1].lng),
+              new google.maps.LatLng(ped_locations[2].lat,ped_locations[2].lng),
+              new google.maps.LatLng(ped_locations[3].lat,ped_locations[3].lng),
+              new google.maps.LatLng(ped_locations[4].lat,ped_locations[4].lng),
+              new google.maps.LatLng(ped_locations[5].lat,ped_locations[5].lng),
+              new google.maps.LatLng(ped_locations[6].lat,ped_locations[6].lng),
+              new google.maps.LatLng(ped_locations[7].lat,ped_locations[7].lng),
+              new google.maps.LatLng(ped_locations[8].lat,ped_locations[8].lng),
+              new google.maps.LatLng(ped_locations[9].lat,ped_locations[9].lng)
+            ];
+        }
+
+      }
+
+      function set_Markers(lat, lng, map){
+        var lat_lng = {
+          lat: lat,
+          lng: lng
+        }
+        var location;
+        var markers = {};
+        for (var i = 0; i < lat_lng.length; i++) {
+          location = lat_lng[i].lat + "," + lat_lng[i].lng;
+          marker = new google.maps.Marker({
+            position: {lat: lat_lng[i].lat, lng: lat_lng[i].lng},
+            map: map,
+            title: location,
+            icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+          });
+          markers[lat_lng[i].lat] = marker;
+        }
+        return [lat_lng,markers];
+      }
+
+      function getPedestrianGeo(lat, lng) {
+        var url = 'https://' + window.location.hostname+ ':5000' +'/#/pedestrian?lat=' + lat + '&lng=' + lng;
+        console.log(url);
+        var request = {
+          url: url,
+          type: 'GET',
+          dataType: 'json',
+        };
+        httpCall(request).then((response) => {
+          console.log(response);
+          var pedestrianData = JSON.parse(response);
+          return pedestrianData;
+        })
+      }
+
+      function point(ped_location) {
+        return [
+          new google.maps.LatLng(ped_location.lat, ped_location.lng)
+        ];
+      }
+
+      // code for pedestrian data ends
+
+
+
+
+
+      // code for traffic flow starts
+      function showTrafficFlow(lat, lng) {
+        return new Promise((resolve, reject) => {
+          var promises = [];
+          var geocoder = new google.maps.Geocoder;
+          var map = new google.maps.Map(document.getElementById('traffic'), {
+            zoom: 16,
+            center: {
+              lat: lat,
+              lng: lng
+            },
+            styles: [{"featureType":"water","elementType":"geometry","stylers":[{"color":"#e9e9e9"},{"lightness":17}]},{"featureType":"landscape","elementType":"geometry","stylers":[{"color":"#f5f5f5"},{"lightness":20}]},{"featureType":"road.highway","elementType":"geometry.fill","stylers":[{"color":"#ffffff"},{"lightness":17}]},{"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#ffffff"},{"lightness":29},{"weight":0.2}]},{"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#ffffff"},{"lightness":18}]},{"featureType":"road.local","elementType":"geometry","stylers":[{"color":"#ffffff"},{"lightness":16}]},{"featureType":"poi","elementType":"geometry","stylers":[{"color":"#f5f5f5"},{"lightness":21}]},{"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#dedede"},{"lightness":21}]},{"elementType":"labels.text.stroke","stylers":[{"visibility":"on"},{"color":"#ffffff"},{"lightness":16}]},{"elementType":"labels.text.fill","stylers":[{"saturation":36},{"color":"#333333"},{"lightness":40}]},{"elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"transit","elementType":"geometry","stylers":[{"color":"#f2f2f2"},{"lightness":19}]},{"featureType":"administrative","elementType":"geometry.fill","stylers":[{"color":"#fefefe"},{"lightness":20}]},{"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#fefefe"},{"lightness":17},{"weight":1.2}]}]
+          });
+          var trafficData = getTrafficGeo(lat, lng)
+            var trafficTowardsUniversityVehicleCount = 0;
+            var trafficTowardsUniversityTrafficSummery;
+            var trafficAwayFromUniversityVehicleCount = 0;
+            var trafficAwayFromUniversityTrafficSummery;
+            responses.forEach((response)=> {
+              var vehiclesTowardsUniversity = 0;
+              var trafficTowardsUniversity;
+              var vehiclesAwayFromUniversity = 0;
+              var trafficAwayFromUniversity;
+              if (response.direction === 180) {
+                vehiclesAwayFromUniversity = Math.round((response.vehicle_count + response.count)/2) > 0 ? Math.round((response.vehicle_count + response.count)/2): 1;
+                vehiclesTowardsUniversity = (response.vehicle_count - vehiclesAwayFromUniversity) > 0 ? (response.vehicle_count - vehiclesAwayFromUniversity): 1;
+                trafficAwayFromUniversityVehicleCount += vehiclesAwayFromUniversity;
+              } else {
+                vehiclesTowardsUniversity = Math.round((response.vehicle_count + response.count)/2) > 0 ? Math.round((response.vehicle_count + response.count)/2): 1;
+                vehiclesAwayFromUniversity = (response.vehicle_count - vehiclesTowardsUniversity) > 0 ? (response.vehicle_count - vehiclesTowardsUniversity): 1;
+                trafficTowardsUniversityVehicleCount += vehiclesTowardsUniversity;
+              }
+              if (trafficAwayFromUniversityVehicleCount === 0) {
+                trafficAwayFromUniversityVehicleCount = 5;
+              }
+              if (trafficTowardsUniversityVehicleCount === 0) {
+                trafficTowardsUniversityVehicleCount = 5;
+              }
+              switch (true) {
+                case vehiclesAwayFromUniversity < 5: trafficAwayFromUniversity = 'Low Traffic';
+                  break;
+                case vehiclesAwayFromUniversity > 5 && vehiclesAwayFromUniversity < 15: trafficAwayFromUniversity = 'Medium Traffic';
+                  break;
+                case vehiclesAwayFromUniversity > 15: trafficAwayFromUniversity = 'Heavy Traffic';
+                  break;
+                default: vehiclesAwayFromUniversity = 'Low Traffic';
+              }
+              switch (true) {
+                case vehiclesTowardsUniversity < 5: trafficTowardsUniversity = 'Low Traffic';
+                  break;
+                case vehiclesTowardsUniversity > 5 && vehiclesTowardsUniversity < 15: trafficTowardsUniversity = 'Medium Traffic';
+                  break;
+                case vehiclesTowardsUniversity > 15: trafficTowardsUniversity = 'Heavy Traffic';
+                  break;
+                default: vehiclesTowardsUniversity = 'Low Traffic';
+              }
+              var marketTitle = 'Vehicle Towards University: ' + vehiclesTowardsUniversity + '\n' +
+                'Traffic Towards the University' + trafficTowardsUniversity + '\n' +
+                'Vehicle Away from University: ' + vehiclesAwayFromUniversity + '\n' +
+                'Traffic Away From the University' + trafficAwayFromUniversity + '\n';
+              setCamera(response, map, geocoder, marketTitle);
+            })
+            switch (true) {
+              case trafficAwayFromUniversityVehicleCount < 10: trafficAwayFromUniversityTrafficSummery = 'Low Traffic';
+                break;
+              case trafficAwayFromUniversityVehicleCount > 10 && trafficAwayFromUniversityVehicleCount < 30: trafficAwayFromUniversityTrafficSummery = 'Medium Traffic';
+                break;
+              case trafficAwayFromUniversityVehicleCount > 30: trafficAwayFromUniversityTrafficSummery = 'Heavy Traffic';
+                break;
+              default: trafficAwayFromUniversityTrafficSummery = 'Low Traffic';
+            }
+            switch (true) {
+              case trafficTowardsUniversityVehicleCount < 10: trafficTowardsUniversityTrafficSummery = 'Low Traffic';
+                break;
+              case trafficTowardsUniversityVehicleCount > 10 && trafficTowardsUniversityVehicleCount < 30: trafficAwayFromUniversityTrafficSummery = 'Medium Traffic';
+                break;
+              case trafficTowardsUniversityVehicleCount > 30: trafficTowardsUniversityTrafficSummery = 'Heavy Traffic';
+                break;
+              default: trafficTowardsUniversityTrafficSummery = 'Heavy Traffic';
+            }
+            $('.ttu > .vc').html(trafficTowardsUniversityVehicleCount);
+            $('.ttu > .ts').html(trafficTowardsUniversityTrafficSummery);
+            $('.tau > .vc').html(trafficAwayFromUniversityVehicleCount);
+            $('.tau > .ts').html(trafficAwayFromUniversityTrafficSummery);
+        })
+      }
+      function setCamera(info, map, geocoder, title) {
+        var infowindow = new google.maps.InfoWindow;
+        var marker = new google.maps.Marker({
+          position: {lat: info.lat, lng: info.lng},
+          map: map,
+          title: title,
+          icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+        });
+        marker.addListener('click', function() {
+          infowindow.open(map, marker);
+        });
+        infowindow.setContent(title);
+      }
+      function getTrafficGeo(lat, lng) {
+        var url = 'https://' + window.location.hostname+ ':5000' +'/#/traffic?lat=' + lat + '&lng=' + lng;
+        console.log(url);
+        var request = {
+          url: url,
+          type: 'GET',
+          dataType: 'json',
+        };
+        httpCall(request).then((response) => {
+          console.log(response);
+          var trafficSpaces = JSON.parse(response);
+          return trafficSpaces;
+        })
+      }
+        // code for traffic flow ends
+
+
+      // codes for parking space starts
+      function showAvailableSpaces(lat, lng) {
+        return new Promise((resolve, reject) => {
+          var map = new google.maps.Map(document.getElementById('parking'), {
+            zoom: 15,
+            center: {
+              lat: lat,
+              lng: lng
+            },
+            styles: [{"featureType":"water","elementType":"geometry","stylers":[{"color":"#e9e9e9"},{"lightness":17}]},{"featureType":"landscape","elementType":"geometry","stylers":[{"color":"#f5f5f5"},{"lightness":20}]},{"featureType":"road.highway","elementType":"geometry.fill","stylers":[{"color":"#ffffff"},{"lightness":17}]},{"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#ffffff"},{"lightness":29},{"weight":0.2}]},{"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#ffffff"},{"lightness":18}]},{"featureType":"road.local","elementType":"geometry","stylers":[{"color":"#ffffff"},{"lightness":16}]},{"featureType":"poi","elementType":"geometry","stylers":[{"color":"#f5f5f5"},{"lightness":21}]},{"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#dedede"},{"lightness":21}]},{"elementType":"labels.text.stroke","stylers":[{"visibility":"on"},{"color":"#ffffff"},{"lightness":16}]},{"elementType":"labels.text.fill","stylers":[{"saturation":36},{"color":"#333333"},{"lightness":40}]},{"elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"transit","elementType":"geometry","stylers":[{"color":"#f2f2f2"},{"lightness":19}]},{"featureType":"administrative","elementType":"geometry.fill","stylers":[{"color":"#fefefe"},{"lightness":20}]},{"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#fefefe"},{"lightness":17},{"weight":1.2}]}]
+          });
+          var geocoder = new google.maps.Geocoder;
+          var parkingSpaces = getParkingGeo(lat, lng);
+          for (var i = 0; i < parkingSpaces; i++) {
+            var myLatLng = parkingSpaces[i];
+            setMarker(myLatLng, map, geocoder);
+          }
+          $('.details').show();
+          $('h1').show();
+          $('.aps').html(availableParking);
+          $('.ap').html(Math.round((availableParking/totalParkingSpaces)*100) + '%')
+          if (availableParking < 10) {
+            $('.aps').css('color', 'red');
+            $('.ap').css('color', 'red');
+          }else {
+            $('.aps').css('color', 'green');
+            $('.ap').css('color', 'green');
+          }
+          var request = {
+            url: 'https://api.darksky.net/forecast/59e81c3cfd57f90ffd1a4a206dc134b8/' + lat +',' + lng,
+            type: 'GET',
+            dataType: 'jsonp',
+          };
+          $.ajax({
+            url: request.url,
+            type: 'GET',
+            dataType: 'jsonp',
+            jsonpCallback: 'past2callback',
+            error: errorHandler,
+            cache: true
+          }).then((response) => {
+            var todayWeatherData = response.daily.data[0];
+            $('.summary').html(todayWeatherData.summary);
+            $('.temperatureMax').html(todayWeatherData.temperatureMax + 'ºF');
+            $('.temperatureMin').html(todayWeatherData.temperatureMin + 'ºF');
+            $('.windSpeed').html(todayWeatherData.windSpeed + 'mph');
+            $('.humidity').html(Math.round(todayWeatherData.humidity * 100) + '%')
+            resolve();
+          })
+        })
+      }
+      function getParkingGeo(lat, lng) {
+        var url = 'https://' + window.location.hostname+ ':5000' +'/#/parking?lat=' + lat + '&lng=' + lng;
+        console.log(url);
+        var request = {
+          url: url,
+          type: 'GET',
+          dataType: 'json',
+        };
+        httpCall(request).then((response) => {
+          console.log(response);
+          var parkingSpaces = JSON.parse(response);
+          return parkingSpaces;
+        })
+      }
+      var errorHandler = function (e) {
+        console.log(e.status + ' ' + e.statusText);
+      };
+      function setMarker(myLatLng, map, geocoder) {
+        var infowindow = new google.maps.InfoWindow;
+        var title;
+        var icon;
+        var marker = new google.maps.Marker({
+          position: myLatLng,
+          map: map,
+          title: title,
+          icon: icon
+        });
+        marker.addListener('click', function() {
+          infowindow.open(map, marker);
+        });
+        infowindow.setContent(title);
+      }
+
+      // code for parking ends
+      function httpCall(request) {
+        return new Promise((resolve, reject) => {
+            http.open(request.type, request.url, true);
+            http.onload = function () {
+              if (http.readyState==4 && http.status==200) {
+                resolve(http.response);
+              }
+            };
+            http.onerror = function () {
+              reject();
+            };
+            http.send();
+          })
+      }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAXd8KlVO4CH52NrFf1yrWQEbPJAd0Zjg4&libraries=places,visualization&callback=initMap"
+            async defer></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  </template>
+  <script>
+    Polymer({
+      is: 'parking-space',
+      properties: {},
+      ready: function() {
+      }
+    });
+  </script>
+</dom-module>
